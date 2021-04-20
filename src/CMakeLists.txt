@@ -5,6 +5,9 @@ project(project4)
 
 include(GenerateProtos.cmake)
 
+#find_package(Protobuf REQUIRED)
+#find_package(gRPC CONFIG REQUIRED)
+
 add_library(
   mapreducelib #library name
   mapreduce.cc mapreduce_impl.cc #sources
