@@ -15,7 +15,7 @@ struct MapReduceSpec
 	std::map<std::string, std::string> configs;
 	std::vector<std::string> inputFiles;
 	std::vector<std::string> ipPorts;
-	std::map<std::string, std::string> shards;
+	std::vector<std::string> shards;
 };
 
 inline void parse_multivalue_field(std::string field, std::vector<std::string>& container)
@@ -29,6 +29,52 @@ inline void parse_multivalue_field(std::string field, std::vector<std::string>& 
     }
 }
 
+inline void calculate_file_shards(const std::vector<std::string>& inputFiles, std::vector<std::string>& shards, const int shardSize)
+{
+  int shardSizeBytes = shardSize * 1024; // RG: Convert shard size to bytes instead
+  int bytesRead = 0;
+  int carryover = 0;
+  std::string shardString = "";
+  for (auto& file : inputFiles)
+  {
+	std::ifstream fileHandle(file, std::ios::binary);
+	std::string line;
+	int offset = 0;
+	while (std::getline(fileHandle, line))
+	{
+	  bytesRead += line.length() + 1;
+	  if (bytesRead > shardSizeBytes)
+	  {
+		if (carryover > 0)
+		{
+		  shardString += ",";
+		}
+
+		shardString += "file: " + file + ", offsets: " + std::to_string(offset) + "-" + std::to_string(offset+bytesRead-carryover);
+		const char* temp = shardString.c_str();
+		shards.push_back(temp);
+
+		// RG: Reset our state
+		offset += bytesRead - carryover;
+		bytesRead = 0;
+		shardString = "";
+		carryover = 0;
+	  }
+	}
+
+    bytesRead -= 1; // RG: Need to substract one because last line will not have newline
+	if (bytesRead > 0)
+	{
+	  shardString = "file: " + file + ", offsets: " + std::to_string(offset) + "-" + std::to_string(offset+bytesRead);
+	  carryover = bytesRead;
+	}
+
+	fileHandle.close();
+  }
+
+  shards.push_back(shardString);
+}
+
 inline int getTotalFileSize(std::vector<std::string>& files)
 {
 	int totalSize = 0;
@@ -40,7 +86,7 @@ inline int getTotalFileSize(std::vector<std::string>& files)
         totalSize += fileHandle.tellg();
 	}
 
-    std::cout << "DEBUG: Size: " << totalSize << "\n";
+    std::cout << "DEBUG: Total File Size: " << totalSize << "\n";
 	return totalSize;
 }
 
@@ -66,9 +112,6 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
 		std::string key  = line.substr(0, delimiter_position);
 		std::string value = line.substr(delimiter_position+1, line.length());
 		mr_spec.configs[key] = value;
-
-		// std::cout << "READ: " << key << "\tValue: " << value << "\n";
-
 	}
 
 	configFile.close();
@@ -78,9 +121,11 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
 	parse_multivalue_field(mr_spec.configs["input_files"], mr_spec.inputFiles);
 
     int totalFileSize = getTotalFileSize(mr_spec.inputFiles);
-	int shardSize = ceil(totalFileSize / std::stoi(mr_spec.configs["map_kilobytes"]));
+	int numOfShards = ceil(totalFileSize / (std::stoi(mr_spec.configs["map_kilobytes"]) * 1024));
+	// std::cout << "DEBUG Shards size: " << mr_spec.configs["map_kilobytes"] << "\n";
+	// std::cout << "DEBUG Number of shards: " << numOfShards << "\n";
 
-	 std::cout << "DEBUG Shard Size: " << shardSize << "\n";
+	calculate_file_shards(mr_spec.inputFiles, mr_spec.shards, std::stoi(mr_spec.configs["map_kilobytes"]));
 	return true;
 }
 
@@ -99,6 +144,9 @@ inline bool validate_mr_spec(const MapReduceSpec& mr_spec)
 
 	for (auto ipPort : mr_spec.ipPorts)
 	  std::cout << "IP:Port " << ipPort << "\n";
+
+	for (auto& shard : mr_spec.shards)
+	  std::cout << shard << "\n";
 
 	return true;
 }
