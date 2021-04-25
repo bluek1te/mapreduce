@@ -13,7 +13,7 @@
 struct MapReduceSpec 
 {
 	std::map<std::string, std::string> configs;
-	std::vector<std::string> inputFiles;
+  std::vector<std::string> inputFiles;
 	std::vector<std::string> ipPorts;
 	std::vector<std::string> shards;
 };
