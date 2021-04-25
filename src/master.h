@@ -3,6 +3,7 @@
 #include <vector>
 #include <grpc++/grpc++.h>
 #include <sstream>
+#include <future>
 
 #include "mapreduce_spec.h"
 #include "file_shard.h"
@@ -16,6 +17,10 @@ using masterworker::reduce_data_in;
 using masterworker::reduce_data_out;
 
 using grpc::Channel;
+using grpc::ClientAsyncResponseReader;
+using grpc::ClientContext;
+using grpc::CompletionQueue;
+using grpc::Status;
 
 /* CS6210_TASK: Handle all the bookkeeping that Master is supposed to do.
 	This is probably the biggest task for this project, will test your understanding of map reduce */
@@ -63,12 +68,6 @@ Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_
 	this->user_id = mr_spec.configs.find("user_id")->second;
 }
 
-
-/* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
-bool Master::run() {
-	return true;
-}
-
 class MapReduce {
 public:
 	std::string user_id;
@@ -82,19 +81,60 @@ public:
 		this->create_stub(grpc::CreateChannel(address, grpc::InsecureChannelCredentials()));
 	}
 	void create_stub(std::shared_ptr<Channel> channel);
-protected:
-	std::unique_ptr<masterworker::map_reduce::Stub>service_stub;
-	int map(std::string shards_str)
+	std::shared_ptr<masterworker::map_reduce::Stub>service_stub;
+	int map(std::string shards_str, std::vector<std::string> output_paths)
 	{
 		map_data_in req;
 		req.set_id(this->user_id);
 		req.set_out_dir(this->out_dir);
 		std::vector<std::string> shards;
 		split_str_into_vector(&shards, shards_str);
-		return 0;
+
+		for(auto elem : shards)
+		{
+			shard* input_shard = req.add_file_shards();
+			std::vector<std::string> file_info;
+			std::stringstream ss(elem);
+			while(ss.good()) {
+				std::string substring;
+				getline(ss, substring, ' ');
+				file_info.push_back(substring);
+			}
+			input_shard->set_file_name(file_info[0]);
+			input_shard->set_first(stoi(file_info[1]));
+			input_shard->set_last(stoi(file_info[2]));
+		}
+
+    map_data_out reply;
+    ClientContext ctx;
+    Status status;
+    
+    this->service_stub->map(&ctx, req, &reply);
+		
+    for (const std::string& path : reply.map_paths())
+      output_paths.push_back(path);
+
+    return 0;
 	}
 };
 
 void MapReduce::create_stub(std::shared_ptr<Channel> channel) {
 	this->service_stub = masterworker::map_reduce::NewStub(channel);
+}
+
+/* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
+bool Master::run() {
+  std::vector<std::future<int>> rets;
+  std::vector<MapReduce> map_reducers;
+  std::vector<std::vector<std::string>> ret_paths;
+
+  size_t i = 0;
+  for (auto shard: filedata) {
+    MapReduce map_reducer = MapReduce(this->workers[i], this->user_id, this->out_dir);
+    map_reducers.push_back(map_reducer);
+    rets.push_back(std::async(&MapReduce::map, &map_reducer, shard, ret_paths[i]));
+    i++;
+  }
+
+	return true;
 }

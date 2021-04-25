@@ -3,8 +3,8 @@ syntax = "proto3";
 package masterworker;
 
 service map_reduce {
-    rpc Map (map_data_in) returns (map_data_out) {}
-    rpc Reduce (reduce_data_in) returns (reduce_data_out) {}
+    rpc map (map_data_in) returns (map_data_out) {}
+    rpc reduce (reduce_data_in) returns (reduce_data_out) {}
 }
 
 message shard {
