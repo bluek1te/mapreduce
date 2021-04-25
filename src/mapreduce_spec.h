@@ -50,7 +50,7 @@ inline void calculate_file_shards(const std::vector<std::string>& inputFiles, st
 		  shardString += ",";
 		}
 
-		shardString += "file: " + file + ", offsets: " + std::to_string(offset) + "-" + std::to_string(offset+bytesRead-carryover);
+		shardString += file + " " + std::to_string(offset) + " " + std::to_string(offset+bytesRead-carryover);
 		const char* temp = shardString.c_str();
 		shards.push_back(temp);
 
@@ -65,7 +65,7 @@ inline void calculate_file_shards(const std::vector<std::string>& inputFiles, st
     bytesRead -= 1; // RG: Need to substract one because last line will not have newline
 	if (bytesRead > 0)
 	{
-	  shardString = "file: " + file + ", offsets: " + std::to_string(offset) + "-" + std::to_string(offset+bytesRead);
+		shardString = file + " " + std::to_string(offset) + " " + std::to_string(offset + bytesRead);
 	  carryover = bytesRead;
 	}
 
@@ -80,7 +80,7 @@ inline int getTotalFileSize(std::vector<std::string>& files)
 	int totalSize = 0;
 	for (auto file: files)
 	{
-		// std::cout << "DEBUG: File: " << file << "\n";
+		std::cout << "DEBUG: File: " << file << "\n";
 		std::ifstream fileHandle(file, std::ios::binary);
 		fileHandle.seekg(0, std::ios::end);
         totalSize += fileHandle.tellg();
@@ -116,11 +116,11 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
 
 	configFile.close();
 
-    std::cout << std::endl;
+  std::cout << std::endl;
 	parse_multivalue_field(mr_spec.configs["worker_ipaddr_ports"], mr_spec.ipPorts);
 	parse_multivalue_field(mr_spec.configs["input_files"], mr_spec.inputFiles);
 
-    int totalFileSize = getTotalFileSize(mr_spec.inputFiles);
+  int totalFileSize = getTotalFileSize(mr_spec.inputFiles);
 	int numOfShards = ceil(totalFileSize / (std::stoi(mr_spec.configs["map_kilobytes"]) * 1024));
 	// std::cout << "DEBUG Shards size: " << mr_spec.configs["map_kilobytes"] << "\n";
 	// std::cout << "DEBUG Number of shards: " << numOfShards << "\n";
