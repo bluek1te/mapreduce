@@ -7,6 +7,11 @@
 #include <sstream>
 #include <future>
 #include <unistd.h>
+#include <filesystem>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "mapreduce_spec.h"
 #include "file_shard.h"
@@ -77,17 +82,19 @@ class MapReduce {
 public:
 	std::string user_id;
 	std::string out_dir;
+  std::string address;
 	MapReduce(std::string address, 
 		std::string user_id,
 		std::string out_dir)
 	{
 		this->user_id = user_id;
 		this->out_dir = out_dir;
+    this->address = address;
 		this->create_stub(grpc::CreateChannel(address, grpc::InsecureChannelCredentials()));
 	}
 	void create_stub(std::shared_ptr<Channel> channel);
 	std::shared_ptr<masterworker::map_reduce::Stub>service_stub;
-	int map(std::string my_shards, std::vector<std::string>* output_paths)
+	int map_init(std::string my_shards, std::vector<std::string>* output_paths)
 	{
 		map_data_in req;
 		req.set_id(this->user_id);
@@ -114,16 +121,14 @@ public:
       std::cout << "Setting File Offset 2 to: " << file_info[2] << std::endl;
 #endif
 		}
-    return 0;
     map_data_out reply;
     ClientContext ctx;
     Status status;
     
-    this->service_stub->map(&ctx, req, &reply);
+    this->service_stub->map_impl(&ctx, req, &reply);
 		
-    for (const std::string& path : reply.map_paths())
+    for (const std::string& path : reply.map_path())
       output_paths->push_back(path);
-    std::cout << "Returning" << std::endl;
     return 0;
 	}
 };
@@ -134,6 +139,12 @@ void MapReduce::create_stub(std::shared_ptr<Channel> channel) {
 
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
 bool Master::run() {
+
+  // Create Output Directory if it doesn't exist
+	struct stat info;
+  if (stat("output", &info) != 0)
+    system("mkdir -p output");
+
   std::vector<std::future<int>*> rets;
   std::vector<MapReduce*> map_reducers;
   std::vector<std::vector<std::string>*> ret_path_lists;
@@ -156,12 +167,12 @@ bool Master::run() {
     std::cout << "shard: " <<  shard << std:: endl;
     std::cout << "worker index: " << worker_index << std::endl;
 #endif
-    MapReduce* map_reducer = new MapReduce(this->workers[0], this->user_id, this->out_dir);
+    MapReduce* map_reducer = new MapReduce(this->workers[worker_index], this->user_id, this->out_dir);
     map_reducers.push_back(map_reducer);
     std::vector<std::string>* ret_path_list = new std::vector<std::string>;
     ret_path_lists.push_back(ret_path_list);
     std::future<int>* ret = new std::future<int>;
-    *ret = std::async(&MapReduce::map, map_reducer, shard, ret_path_list);
+    *ret = std::async(&MapReduce::map_init, map_reducer, shard, ret_path_list);
     rets.push_back(ret);
     i++;
     worker_index++;
