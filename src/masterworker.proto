@@ -28,8 +28,9 @@ message map_data_out {
 
 message reduce_data_in {
     string user_id = 1;
-    int32 segments = 2;
-    int32 n_mappers = 3;
+    int32 n_mappers = 2;
+    string out_dir = 3;
+    int32 reducer_id = 4;
 }
 
 message reduce_data_out {

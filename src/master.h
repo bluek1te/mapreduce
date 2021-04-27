@@ -72,6 +72,7 @@ class MapReduceHandler {
       this->mr_spec = mr_spec;
       this->service_stub = masterworker::map_reduce::NewStub(grpc::CreateChannel(addr, grpc::InsecureChannelCredentials()));
     }
+
     int handle_map(FileShard shard, size_t mapper_id) {
       std::cout << "Handling map for user " << this->mr_spec.user_id << "out_dir: " << this->mr_spec.output_dir << std::endl;
       map_data_in req;
@@ -95,8 +96,26 @@ class MapReduceHandler {
       status = this->service_stub->map_impl(&ctx, req, &reply);
       std::cout << "Status " << status.ok() << std::endl;
 
-      return 0;
-    };
+      return (status.ok() ? 0 : 1); 
+    }
+
+    int handle_reduce(size_t n_mappers, size_t reducer_id) {
+      std::cout << "Handling reduce for user " << this->mr_spec.user_id << "out_dir: " << this->mr_spec.output_dir << std::endl;
+      reduce_data_in req;
+      req.set_user_id(this->mr_spec.user_id);
+      req.set_out_dir(this->mr_spec.output_dir);
+      req.set_reducer_id(reducer_id);
+      req.set_n_mappers(n_mappers);
+
+      reduce_data_out reply;
+      ClientContext ctx;
+      Status status;
+
+      status = this->service_stub->reduce_impl(&ctx, req, &reply);
+      std::cout << "Status " << status.ok() << std::endl;
+
+      return (status.ok() ? 0 : 1); 
+    }
 };
 
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
@@ -110,16 +129,16 @@ bool Master::run() {
     system("mkdir -p output");
 
   std::vector<std::future<int>*> rets;
-  std::vector<MapReduceHandler*> map_reducers;
+  std::vector<MapReduceHandler*> mappers;
 
   size_t worker_index = 0;
   size_t mapper_index = 0;
   for (auto shard : this->file_shards) {
-    MapReduceHandler* map_reducer = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
-    map_reducers.push_back(map_reducer);
+    MapReduceHandler* mapper = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
+    mappers.push_back(mapper);
     std::future<int>* ret = new std::future<int>;
     // std::cout << "Launching async call\n";
-    *ret = std::async(&MapReduceHandler::handle_map, map_reducer, shard, mapper_index);
+    *ret = std::async(&MapReduceHandler::handle_map, mapper, shard, mapper_index);
     rets.push_back(ret);
     mapper_index++;
     worker_index++;
@@ -129,6 +148,26 @@ bool Master::run() {
 
   for (auto ret : rets) {
     ret->get();
+    delete ret;
+  }
+
+  std::vector<std::future<int>*> reduce_rets;
+  std::vector<MapReduceHandler*> reducers;
+  worker_index = 0;
+  for (int i = 0; i < this->mr_spec.n_output_files; i++) {
+    std::future<int>* ret = new std::future<int>;
+    MapReduceHandler* reducer = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
+    reducers.push_back(reducer);
+    *ret = std::async(&MapReduceHandler::handle_reduce, reducer, this->file_shards.size(), i);
+    reduce_rets.push_back(ret);
+    worker_index++;
+    if (worker_index >= this->mr_spec.n_workers)
+      worker_index = 0;
+  }
+
+  for (auto ret : reduce_rets) {
+    ret->get();
+    delete ret;
   }
   
 	return true;

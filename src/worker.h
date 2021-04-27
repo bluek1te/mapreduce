@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <vector>
+#include <string>
 
 #include "mr_tasks.h"
 #include "masterworker.grpc.pb.h"
@@ -18,6 +20,8 @@ using grpc::ServerBuilder;
 using masterworker::map_reduce;
 using masterworker::map_data_in;
 using masterworker::map_data_out;
+using masterworker::reduce_data_in;
+using masterworker::reduce_data_out;
 
 extern std::shared_ptr<BaseMapper> get_mapper_from_task_factory(const std::string& id);
 extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::string& id);
@@ -42,6 +46,10 @@ class Worker {
         Status map_impl(ServerContext* ctx, const map_data_in* req, map_data_out* resp) {
           // std::cout << "Map Implementation, out_dir=" + req->out_dir() + "\n";
           std::shared_ptr<BaseMapper> mapper = get_mapper_from_task_factory(req->user_id());
+          std::cout << "n_output_files: " << req->n_output_files() << std::endl;
+          mapper->impl_->n_outputs = req->n_output_files();
+          mapper->impl_->mapper_id = req->mapper_id();
+          mapper->impl_->out_dir = req->out_dir();
 
           for (auto file_info : req->fileinfos_rpc()) {
 #if DEBUG_WORKER
@@ -53,16 +61,48 @@ class Worker {
               char* out_buffer = new char[len];
               input_file.seekg(file_info.first(), std::ios::beg);
               input_file.read(out_buffer, len);
-            
-              std::cout << "n_output_files: " << req->n_output_files() << std::endl;
-              mapper->impl_->n_outputs = req->n_output_files();
-              mapper->impl_->mapper_id = req->mapper_id();
-              mapper->impl_->out_dir = req->out_dir();
-              mapper->impl_->create_file_handles();
+
               mapper->map(out_buffer);
               delete[] out_buffer;
           }
           
+          return Status::OK;
+        }
+
+        Status reduce_impl(ServerContext* ctx, const reduce_data_in* req, reduce_data_out* resp) {
+          std::cout << "Reduce Implementation, out_dir=" + req->out_dir() + " n_mappers=" + std::to_string(req->n_mappers()) + "\n";
+          std::map<std::string, std::vector<std::string>> tally;
+          std::shared_ptr<BaseReducer> reducer = get_reducer_from_task_factory(req->user_id());
+          reducer->impl_->reducer_id = req->reducer_id();
+          reducer->impl_->out_dir = req->out_dir();
+          //std::string tmp;
+          char tmp[200];
+          std::vector<std::string> token;
+          for (size_t i = 0; i < req->n_mappers(); i++) {
+            std::cout << "Opening " + req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) << "\n";
+            std::ifstream input_file {"output/12_5.txt", std::ios::binary | std::ios::ate};
+            //std::ifstream input_file {req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()), std::ios::binary | std::ios::ate};
+            input_file.read(tmp, 200);
+            std::cout << tmp << std::endl;
+            
+            /*while(getline(input_file, tmp)) {
+              std::cout << tmp << std::endl;
+              std::string val = tmp;
+              std::string key = tmp;
+              auto iter = tally.find(key);
+							if (iter != tally.end())
+								iter->second.push_back(val);
+							else {
+                std::vector<std::string> vals;
+								tally.emplace(key, vals);
+              }
+              for (auto const& pair : tally)
+              {
+                reducer->reduce(pair.first, pair.second);
+              }
+            }*/
+          }
+
           return Status::OK;
         }
     };
