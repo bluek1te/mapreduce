@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <stdio.h>
 
 #include "mr_tasks.h"
 #include "masterworker.grpc.pb.h"
@@ -50,6 +51,8 @@ class Worker {
           mapper->impl_->n_outputs = req->n_output_files();
           mapper->impl_->mapper_id = req->mapper_id();
           mapper->impl_->out_dir = req->out_dir();
+          mapper->impl_->create_file_handles();
+          size_t len = 0;
 
           for (auto file_info : req->fileinfos_rpc()) {
 #if DEBUG_WORKER
@@ -57,8 +60,9 @@ class Worker {
                 << file_info.file_name() + "(" + std::to_string(file_info.first()) + "|" + std::to_string(file_info.last()) + ")\n";
 #endif
               std::ifstream input_file {file_info.file_name(), std::ios::binary | std::ios::ate };
-              size_t len = file_info.last() - file_info.first();
-              char* out_buffer = new char[len];
+              len = file_info.last() - file_info.first();
+              char* out_buffer = new char[len + 1];
+              memset(out_buffer, 0, len + 1);
               input_file.seekg(file_info.first(), std::ios::beg);
               input_file.read(out_buffer, len);
 
@@ -79,11 +83,12 @@ class Worker {
           char tmp[200];
           std::vector<std::string> token;
           for (size_t i = 0; i < req->n_mappers(); i++) {
-            std::cout << "Opening " + req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) << "\n";
+            // std::cout << "Opening " + req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) << "\n";
             std::ifstream input_file {"output/12_5.txt", std::ios::binary | std::ios::ate};
+            // std::cout << "Open: " << input_file.is_open() + "\n\n\n\n\n";
             //std::ifstream input_file {req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()), std::ios::binary | std::ios::ate};
             input_file.read(tmp, 200);
-            std::cout << tmp << std::endl;
+            // std::cout << tmp << std::endl;
             
             /*while(getline(input_file, tmp)) {
               std::cout << tmp << std::endl;

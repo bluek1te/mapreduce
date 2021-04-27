@@ -11,16 +11,16 @@
 struct BaseMapperInternal {
 
 		/* DON'T change this function's signature */
-		BaseMapperInternal();
+	  BaseMapperInternal();
 
 		/* DON'T change this function's signature */
-		void emit(const std::string& key, const std::string& val);
+	  void emit(const std::string& key, const std::string& val);
 
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
-		size_t n_outputs;
-		size_t mapper_id;
+	  size_t n_outputs;
+	  size_t mapper_id;
     std::string out_dir;
-		std::vector<std::ofstream> output_files;
+	  std::vector<std::ofstream> output_files;
     void cleanup_files(void);
     void create_file_handles(void);
 };
@@ -44,7 +44,7 @@ inline void BaseMapperInternal::create_file_handles() {
 /* CS6210_TASK Implement this function */
 inline void BaseMapperInternal::emit(const std::string& key, const std::string& val) {
   static int index = 0;
-	this->output_files[index] << key << " " << val << std::endl;
+  this->output_files[index] << key << " " << val << std::endl;
   index++;
   if (index >= this->n_outputs)
     index = 0;
