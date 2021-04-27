@@ -53,14 +53,14 @@ class Worker {
               char* out_buffer = new char[len];
               input_file.seekg(file_info.first(), std::ios::beg);
               input_file.read(out_buffer, len);
-              delete[] out_buffer;
-              
+            
               std::cout << "n_output_files: " << req->n_output_files() << std::endl;
               mapper->impl_->n_outputs = req->n_output_files();
               mapper->impl_->mapper_id = req->mapper_id();
               mapper->impl_->out_dir = req->out_dir();
               mapper->impl_->create_file_handles();
               mapper->map(out_buffer);
+              delete[] out_buffer;
           }
           
           return Status::OK;
