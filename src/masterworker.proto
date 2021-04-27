@@ -1,3 +1,35 @@
 syntax = "proto3";
 
 package masterworker;
+
+service map_reduce {
+    rpc map_impl (map_data_in) returns (map_data_out) {}
+    rpc reduce_impl (reduce_data_in) returns (reduce_data_out) {}
+}
+
+message filedata {
+    string file_name = 1;
+    int32 first = 2;
+    int32 last = 3;
+}
+
+message map_data_in {
+    string id = 1;
+    repeated filedata file_info = 2;
+    string out_dir = 3;
+    int32 buffer_len = 4;
+    int32 segment = 5;
+}
+
+message map_data_out {
+    repeated string map_path = 1;
+}
+
+message reduce_data_in {
+    string id = 1;
+    string file_path = 2;
+}
+
+message reduce_data_out {
+    string file_path = 1;
+}
