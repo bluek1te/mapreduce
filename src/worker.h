@@ -5,6 +5,7 @@
 #include <mr_task_factory.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <unistd.h>
 #include <vector>
 #include <string>
@@ -79,21 +80,19 @@ class Worker {
           std::shared_ptr<BaseReducer> reducer = get_reducer_from_task_factory(req->user_id());
           reducer->impl_->reducer_id = req->reducer_id();
           reducer->impl_->out_dir = req->out_dir();
-          //std::string tmp;
-          char tmp[200];
-          std::vector<std::string> token;
+          std::string tmp;
+          std::string token;
           for (size_t i = 0; i < req->n_mappers(); i++) {
-            // std::cout << "Opening " + req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) << "\n";
-            std::ifstream input_file {"output/12_5.txt", std::ios::binary | std::ios::ate};
-            // std::cout << "Open: " << input_file.is_open() + "\n\n\n\n\n";
-            //std::ifstream input_file {req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()), std::ios::binary | std::ios::ate};
-            input_file.read(tmp, 200);
-            // std::cout << tmp << std::endl;
+            std::ifstream input_file {req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt", 
+              std::ios::binary | std::ios::ate};
+              input_file.seekg(0, std::ios::beg);
             
-            /*while(getline(input_file, tmp)) {
-              std::cout << tmp << std::endl;
-              std::string val = tmp;
-              std::string key = tmp;
+            while(getline(input_file, tmp)) {
+              std::stringstream item(tmp);
+              getline(item, token, ' ');
+              std::string key = token;
+              getline(item, token, ' ');
+              std::string val = token;
               auto iter = tally.find(key);
 							if (iter != tally.end())
 								iter->second.push_back(val);
@@ -105,7 +104,7 @@ class Worker {
               {
                 reducer->reduce(pair.first, pair.second);
               }
-            }*/
+            }
           }
 
           return Status::OK;

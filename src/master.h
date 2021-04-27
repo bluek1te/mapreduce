@@ -38,8 +38,6 @@ class Master {
 	private:
     MapReduceSpec mr_spec;
     std::vector<FileShard> file_shards;
-    std::map<int, int> mappers;
-    std::map<int, int> reducers;
 };
 
 

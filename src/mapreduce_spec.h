@@ -52,10 +52,10 @@ inline int getTotalFileSize(std::vector<std::string>& files)
 /* CS6210_TASK: Populate MapReduceSpec data structure with the specification from the config file */
 inline bool read_mr_spec_from_config_file(const std::string& config_filename, MapReduceSpec& mr_spec) 
 {
-	std::ifstream configFile(config_filename);
+  std::ifstream configFile(config_filename);
   std::map<std::string, std::string> configs;
-	if (!configFile.is_open())
-	  return false;
+  if (!configFile.is_open())
+    return false;
 	
 	// RG: Let's parse our config file and print out for good measure
 	while(configFile)

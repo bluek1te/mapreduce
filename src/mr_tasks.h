@@ -81,7 +81,6 @@ inline BaseReducerInternal::BaseReducerInternal() {
 
 /* CS6210_TASK Implement this function */
 inline void BaseReducerInternal::emit(const std::string& key, const std::string& val) {
-	std::ofstream output_file {out_dir + std::to_string(reducer_id), std::ios_base::app};
-  std::cout << "insert!\n";
-  output_file << key << " " << val;
+	std::ofstream output_file {out_dir + "/" + std::to_string(reducer_id) + "_output.txt", std::ios_base::app};
+  output_file << key << " " << val << "\n";
 }
