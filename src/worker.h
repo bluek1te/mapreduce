@@ -1,8 +1,24 @@
 #pragma once
 
+#include <grpc++/grpc++.h>
 #include <mr_task_factory.h>
-#include "mr_tasks.h"
+#include <iostream>
+#include <fstream>
 
+#include "mr_tasks.h"
+#include "masterworker.grpc.pb.h"
+
+using grpc::Server;
+using grpc::Status;
+using grpc::ServerContext;
+using grpc::ServerBuilder;
+
+using masterworker::map_reduce;
+using masterworker::map_data_in;
+using masterworker::map_data_out;
+
+extern std::shared_ptr<BaseMapper> get_mapper_from_task_factory(const std::string& id);
+extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::string& id);
 
 /* CS6210_TASK: Handle all the task a Worker is supposed to do.
 	This is a big task for this project, will test your understanding of map reduce */
@@ -16,15 +32,40 @@ class Worker {
 		bool run();
 
 	private:
-		/* NOW you can add below, data members and member functions as per the need of your implementation*/
+		std::unique_ptr<Server> server;
+    std::string addr;
 
+    class MapReduceImpl final : public map_reduce::Service {
+      public:
+        Status map_impl(ServerContext* ctx, const map_data_in* req, map_data_out* resp) {
+          std::cout << "Map Implementation\n";
+
+          std::shared_ptr<BaseMapper> mapper = get_mapper_from_task_factory(req->user_id());
+
+          for (auto file_info : req->fileinfos_rpc()) {
+              std::ifstream input_file {file_info.file_name(), std::ios::binary | std::ios::ate };
+              size_t len = file_info.last() - file_info.first();
+              char* out_buffer = new char[len];
+              input_file.seekg(file_info.first(), std::ios::beg);
+              input_file.read(out_buffer, len);
+              delete[] out_buffer;
+              return Status::OK;
+              mapper->impl_->n_outputs = req->n_output_files();
+              mapper->impl_->mapper_id = req->mapper_id();
+              mapper->impl_->create_file_handles();
+              mapper->map(out_buffer);
+          }
+          return Status::OK;
+        }
+    };
+		
 };
 
 
 /* CS6210_TASK: ip_addr_port is the only information you get when started.
 	You can populate your other class data members here if you want */
 Worker::Worker(std::string ip_addr_port) {
-
+  this->addr = ip_addr_port;
 }
 
 extern std::shared_ptr<BaseMapper> get_mapper_from_task_factory(const std::string& user_id);
@@ -38,10 +79,11 @@ extern std::shared_ptr<BaseReducer> get_reducer_from_task_factory(const std::str
 bool Worker::run() {
 	/*  Below 5 lines are just examples of how you will call map and reduce
 		Remove them once you start writing your own logic */ 
-	std::cout << "worker.run(), I 'm not ready yet" <<std::endl;
-	auto mapper = get_mapper_from_task_factory("cs6210");
-	mapper->map("I m just a 'dummy', a \"dummy line\"");
-	auto reducer = get_reducer_from_task_factory("cs6210");
-	reducer->reduce("dummy", std::vector<std::string>({"1", "1"}));
+	ServerBuilder builder;
+	MapReduceImpl service;
+	builder.AddListeningPort(this->addr, grpc::InsecureServerCredentials());
+	builder.RegisterService(&service);
+	std::unique_ptr<Server> server {builder.BuildAndStart()};
+	server->Wait();
 	return true;
 }

@@ -50,15 +50,17 @@ static void _sync_to_newlines(std::vector<FileShard>& fileShards) {
 /* CS6210_TASK: Create fileshards from the list of input files, map_kilobytes etc. using mr_spec you populated  */ 
 inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fileShards) {
   std::map<std::string, int> filesizes;
-#if DEBUG_SHARD
+
   for (auto filename : mr_spec.input_files) {
     size_t input_size = filesize(filename);
     filesizes.insert(std::pair<std::string, int>(filename, input_size));
+#if DEBUG_SHARD
     std::cout << filename << "|" << input_size << std::endl;
     std::cout << "n_chunks: " << mr_spec.n_chunks << std::endl;
     std::cout << "chunk_size: " << mr_spec.chunk_size << std::endl;
-  }
 #endif
+  }
+
   size_t first = 0;
   size_t last = 0;
   size_t carry = 0;
