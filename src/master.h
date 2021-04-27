@@ -49,7 +49,6 @@ Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_
 	for (auto addr : this->mr_spec.worker_addrs)
 	  std::cout << "IP:Port " << addr << "\n";
 	for (auto& shard : this->file_shards) {
-    std::cout << "it" << std::endl;
     for (auto& file : shard.filedata) {
 	    std::cout << file.name << "(";
       std::cout << file.first << "|";

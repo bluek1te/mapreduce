@@ -86,7 +86,7 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
   mr_spec.n_workers = std::stoi(configs["n_workers"]);
   mr_spec.n_output_files = std::stoi(configs["n_output_files"]);
   mr_spec.n_chunks = numOfShards;
-  mr_spec.chunk_size = totalFileSize * 1024 / mr_spec.n_chunks;
+  mr_spec.chunk_size = std::stoi(configs["map_kilobytes"]) * 1024;
   mr_spec.output_dir = configs["output_dir"];
 
 	return true;
