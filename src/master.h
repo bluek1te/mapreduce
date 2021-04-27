@@ -5,10 +5,13 @@
 #include "file_shard.h"
 #include "masterworker.grpc.pb.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <future>
 #include <grpc++/grpc++.h>
 
 using masterworker::map_reduce;
-using masterworker::filedata;
+using masterworker::fileinfo_rpc;
 using masterworker::map_data_in;
 using masterworker::map_data_out;
 using masterworker::reduce_data_in;
@@ -68,7 +71,19 @@ class MapReduceHandler {
       this->mr_spec = mr_spec;
       this->service_stub = masterworker::map_reduce::NewStub(grpc::CreateChannel(addr, grpc::InsecureChannelCredentials()));
     }
-    int handle_map(std::vector<fileinfo>);
+    int handle_map(FileShard shard) {
+      map_data_in req;
+      req.set_id(this->mr_spec.user_id);
+      req.set_out_dir(this->mr_spec.output_dir);
+      for (auto file_info : shard.filedata) {
+        fileinfo_rpc* file_input = req.add_fileinfos_rpc();
+        file_input->set_file_name(file_info.name);
+        file_input->set_first(file_info.first);
+        file_input->set_last(file_info.last);
+        file_input->set_size(file_info.size);
+      }
+      return 0;
+    };
 };
 
 /* CS6210_TASK: Here you go. once this function is called you will complete whole map reduce task and return true if succeeded */
@@ -76,5 +91,30 @@ bool Master::run() {
 #if DEBUG_MASTER
   std::cout << "Running Master" << std::endl;
 #endif
+  // Create Output Directory if it doesn't exist
+	struct stat info;
+  if (stat("output", &info) != 0)
+    system("mkdir -p output");
+
+  std::vector<std::future<int>*> rets;
+  std::vector<MapReduceHandler*> map_reducers;
+
+  size_t worker_index = 0;
+  for (auto shard : this->file_shards) {
+    MapReduceHandler* map_reducer = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
+    map_reducers.push_back(map_reducer);
+    std::future<int>* ret = new std::future<int>;
+    *ret = std::async(&MapReduceHandler::handle_map, map_reducer, shard);
+    rets.push_back(ret);
+    worker_index++;
+    if (worker_index >= this->mr_spec.n_workers)
+      worker_index = 0;
+  }
+
+  for (auto ret : rets) {
+    ret->get();
+    delete ret;
+  }
+  
 	return true;
 }

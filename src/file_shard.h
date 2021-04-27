@@ -1,5 +1,5 @@
 #pragma once
-#define DEBUG_SHARD 1
+#define DEBUG_SHARD 0
 
 #include <vector>
 #include <iostream>
