@@ -88,6 +88,7 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
   mr_spec.n_chunks = numOfShards;
   mr_spec.chunk_size = std::stoi(configs["map_kilobytes"]) * 1024;
   mr_spec.output_dir = configs["output_dir"];
+  mr_spec.user_id = configs["user_id"];
 
 	return true;
 }

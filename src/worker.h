@@ -1,9 +1,11 @@
 #pragma once
+#define DEBUG_WORKER 1
 
 #include <grpc++/grpc++.h>
 #include <mr_task_factory.h>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 
 #include "mr_tasks.h"
 #include "masterworker.grpc.pb.h"
@@ -38,23 +40,29 @@ class Worker {
     class MapReduceImpl final : public map_reduce::Service {
       public:
         Status map_impl(ServerContext* ctx, const map_data_in* req, map_data_out* resp) {
-          std::cout << "Map Implementation\n";
-
+          // std::cout << "Map Implementation, out_dir=" + req->out_dir() + "\n";
           std::shared_ptr<BaseMapper> mapper = get_mapper_from_task_factory(req->user_id());
 
           for (auto file_info : req->fileinfos_rpc()) {
+#if DEBUG_WORKER
+              std::cout << "ID: " << std::to_string(req->mapper_id()) << "-" << "Processing file " 
+                << file_info.file_name() + "(" + std::to_string(file_info.first()) + "|" + std::to_string(file_info.last()) + ")\n";
+#endif
               std::ifstream input_file {file_info.file_name(), std::ios::binary | std::ios::ate };
               size_t len = file_info.last() - file_info.first();
               char* out_buffer = new char[len];
               input_file.seekg(file_info.first(), std::ios::beg);
               input_file.read(out_buffer, len);
               delete[] out_buffer;
-              return Status::OK;
+              
+              std::cout << "n_output_files: " << req->n_output_files() << std::endl;
               mapper->impl_->n_outputs = req->n_output_files();
               mapper->impl_->mapper_id = req->mapper_id();
+              mapper->impl_->out_dir = req->out_dir();
               mapper->impl_->create_file_handles();
               mapper->map(out_buffer);
           }
+          
           return Status::OK;
         }
     };

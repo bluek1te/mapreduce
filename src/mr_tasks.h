@@ -18,6 +18,7 @@ struct BaseMapperInternal {
 		/* NOW you can add below, data members and member functions as per the need of your implementation*/
 		size_t n_outputs;
 		size_t mapper_id;
+    std::string out_dir;
 		std::vector<std::ofstream> output_files;
 
     void create_file_handles(void);
@@ -30,9 +31,9 @@ inline BaseMapperInternal::BaseMapperInternal() {
 }
 
 inline void BaseMapperInternal::create_file_handles() {
-  std::cout << "Creating File Handles\n";
+  std::cout << "Creating File Handles in directory" + this->out_dir + "\n";
 	for (int i = 0; i < this->n_outputs; i++) {
-		this->output_files.push_back(std::ofstream{std::to_string(this->mapper_id) + "_" + 
+		this->output_files.push_back(std::ofstream{this->out_dir + "/" + std::to_string(this->mapper_id) + "_" + 
       std::to_string(i), std::ios::binary | std::ios::ate});
 	}
 }

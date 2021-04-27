@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <future>
 #include <grpc++/grpc++.h>
+#include <unistd.h>
 
 using masterworker::map_reduce;
 using masterworker::fileinfo_rpc;
@@ -72,10 +73,11 @@ class MapReduceHandler {
       this->service_stub = masterworker::map_reduce::NewStub(grpc::CreateChannel(addr, grpc::InsecureChannelCredentials()));
     }
     int handle_map(FileShard shard, size_t mapper_id) {
-      // std::cout << "Handling map" << std::endl;
+      std::cout << "Handling map for user " << this->mr_spec.user_id << "out_dir: " << this->mr_spec.output_dir << std::endl;
       map_data_in req;
       req.set_user_id(this->mr_spec.user_id);
       req.set_out_dir(this->mr_spec.output_dir);
+      //std::cout << "Setting map id to " << mapper_id << std::endl;
       req.set_mapper_id(mapper_id);
       req.set_n_output_files(this->mr_spec.n_output_files);
       for (auto file_info : shard.filedata) {
@@ -127,7 +129,6 @@ bool Master::run() {
 
   for (auto ret : rets) {
     ret->get();
-    delete ret;
   }
   
 	return true;
