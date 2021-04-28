@@ -1,6 +1,6 @@
 #pragma once
 #define DEBUG_WORKER 1
-#define DELETE_INTER 1
+#define DELETE_INTER 0
 
 #include <grpc++/grpc++.h>
 #include <mr_task_factory.h>
@@ -124,6 +124,7 @@ class Worker {
                 tally.emplace(key, vals);
               }
             }
+            // Pass each pair to reduce function. Corellating output to previous input will be  <"potato" : "10">, <"cat" : "4">, ...
             for (auto const& pair : tally)
             {
               reducer->reduce(pair.first, pair.second);

@@ -8,6 +8,7 @@
 #include <map>
 #include <cmath>
 #include <sstream>
+#include <sys/stat.h>
 
 struct MapReduceSpec 
 {
@@ -92,7 +93,8 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
 
 inline bool validate_mr_spec(const MapReduceSpec& mr_spec) 
 {
-
+  mkdir(const_cast<char *>(mr_spec.output_dir.c_str()), 0777);
+  mkdir(const_cast<char *>("interm"), 0777);
 #if DEBUG_SPEC
   for (auto addr : mr_spec.worker_addrs)
     std::cout << "IP:Port " << addr << "\n";

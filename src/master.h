@@ -28,31 +28,31 @@ using grpc::Status;
 	This is probably the biggest task for this project, will test your understanding of map reduce */
 class Master {
 
-	public:
-		/* DON'T change the function signature of this constructor */
-		Master(const MapReduceSpec&, const std::vector<FileShard>&);
+  public:
+    /* DON'T change the function signature of this constructor */
+    Master(const MapReduceSpec&, const std::vector<FileShard>&);
 
-		/* DON'T change this function's signature */
-		bool run();
+    /* DON'T change this function's signature */
+    bool run();
 
-	private:
+  private:
     MapReduceSpec mr_spec;
     std::vector<FileShard> file_shards;
 };
 
 
 /* CS6210_TASK: This is all the information your master will get from the framework.
-	You can populate your other class data members here if you want */
+  You can populate your other class data members here if you want */
 Master::Master(const MapReduceSpec& mr_spec, const std::vector<FileShard>& file_shards) {
   this->mr_spec = mr_spec;
   this->file_shards = file_shards;
 
 #if DEBUG_MASTER
-	for (auto addr : this->mr_spec.worker_addrs)
-	  std::cout << "IP:Port " << addr << "\n";
-	for (auto& shard : this->file_shards) {
+  for (auto addr : this->mr_spec.worker_addrs)
+    std::cout << "IP:Port " << addr << "\n";
+  for (auto& shard : this->file_shards) {
     for (auto& file : shard.filedata) {
-	    std::cout << file.name << "(";
+      std::cout << file.name << "(";
       std::cout << file.first << "|";
       std::cout << file.last << ")\n";
     }
@@ -119,13 +119,6 @@ bool Master::run() {
 #if DEBUG_MASTER
   std::cout << "Running Master" << std::endl;
 #endif
-  // Create Output Directory if it doesn't exist
-	// struct stat info;
-  // if (stat("output", &info) != 0)
-  //  system("mkdir -p output");
-  mkdir(const_cast<char *>(this->mr_spec.output_dir.c_str()), 0777);
-  mkdir(const_cast<char *>("interm"), 0777);
-
   // Launch mapper calls asynchronously. This is done by creating a handler object, and launching the handle_map
   // method using C++ futures. The return value of the future will be 1 on SUCCESS, 0 on FAILURE.
   std::vector<std::future<int>*> mapper_rets;
@@ -179,5 +172,5 @@ bool Master::run() {
   }
   std::cout << "\n";
   
-	return true;
+  return true;
 }
