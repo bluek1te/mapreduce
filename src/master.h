@@ -91,7 +91,7 @@ class MapReduceHandler {
       map_data_out reply;
       ClientContext ctx;
       std::chrono::system_clock::time_point deadline = std::chrono::system_clock::now() +
-        std::chrono::seconds(10);
+        std::chrono::seconds(1000);
       ctx.set_deadline(deadline);
       Status status;
 
@@ -111,7 +111,7 @@ class MapReduceHandler {
       reduce_data_out reply;
       ClientContext ctx;
       std::chrono::system_clock::time_point deadline = std::chrono::system_clock::now() +
-        std::chrono::seconds(10);
+        std::chrono::seconds(1000);
       ctx.set_deadline(deadline);
       Status status;
 
