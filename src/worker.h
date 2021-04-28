@@ -62,11 +62,13 @@ class Worker {
           // Open file handles as part of the class object, so they stay open.
           // Opening and reopening file handles for each <key, val> pair takes forever.
           mapper->impl_->create_file_handles();
+          mapper->impl_->initialize_file_index();
           size_t len = 0;
 
           // A shard can contain multiple file references. For each file in the shard, we read the length provided
           // to us by the offsets, starting at the beginning offset. This gets stored into a buffer and then passed to
           // the user's map function.
+
           for (auto file_info : req->fileinfos_rpc()) {
 #if DEBUG_WORKER
             std::cout << "ID: " << std::to_string(req->mapper_id()) << "-" << "Processing file " 
@@ -81,7 +83,7 @@ class Worker {
             mapper->map(out_buffer);
             delete[] out_buffer;
           }
-          
+
           return Status::OK;
         }
 
