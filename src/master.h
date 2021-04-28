@@ -10,6 +10,7 @@
 #include <future>
 #include <grpc++/grpc++.h>
 #include <unistd.h>
+#include <chrono>
 
 using masterworker::map_reduce;
 using masterworker::fileinfo_rpc;
@@ -89,6 +90,9 @@ class MapReduceHandler {
 
       map_data_out reply;
       ClientContext ctx;
+      std::chrono::system_clock::time_point deadline = std::chrono::system_clock::now() +
+        std::chrono::seconds(10);
+      ctx.set_deadline(deadline);
       Status status;
 
       status = this->service_stub->map_impl(&ctx, req, &reply);
@@ -106,6 +110,9 @@ class MapReduceHandler {
 
       reduce_data_out reply;
       ClientContext ctx;
+      std::chrono::system_clock::time_point deadline = std::chrono::system_clock::now() +
+        std::chrono::seconds(10);
+      ctx.set_deadline(deadline);
       Status status;
 
       status = this->service_stub->reduce_impl(&ctx, req, &reply);
