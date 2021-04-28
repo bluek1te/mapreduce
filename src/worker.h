@@ -1,6 +1,6 @@
 #pragma once
 #define DEBUG_WORKER 1
-#define DELETE_INTER 1
+#define DELETE_INTER 0
 
 #include <grpc++/grpc++.h>
 #include <mr_task_factory.h>
@@ -106,6 +106,7 @@ class Worker {
             std::string input_file_str = "interm/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt";
             std::ifstream input_file {input_file_str, 
               std::ios::binary | std::ios::ate};
+            std::cout << "Reduce: Processing " + input_file_str + "\n";
               input_file.seekg(0, std::ios::beg);
             // Parse line by line and create a map with <key, values> (note that "values" is plural here).
             // The intermediate buffers that get passed to the reducer function here, for example, will be.
@@ -113,6 +114,8 @@ class Worker {
             while(getline(input_file, tmp)) {
               if (tmp.find_first_not_of(" ") == std::string::npos) // If it's only whitespace, skip.
                 continue;
+              if (input_file_str.compare("interm/0_0.txt") == 0)
+                std::cout << tmp << std::endl;
               std::stringstream item(tmp);
               getline(item, token, ' ');
               std::string key = token;
@@ -126,11 +129,6 @@ class Worker {
                 tally.emplace(key, vals);
               }
             }
-            // Pass each pair to reduce function. Corellating output to previous input will be  <"potato" : "10">, <"cat" : "4">, ...
-            for (auto const& pair : tally)
-            {
-              reducer->reduce(pair.first, pair.second);
-            }
             
             // std::cout << input_file_str << std::endl;
             input_file.close();
@@ -139,6 +137,11 @@ class Worker {
             // Have to pass this in as a cstring or C++ compiler will think you want a diff function..
             remove(input_file_str.c_str());
 #endif
+          }
+          // Pass each pair to reduce function. Corellating output to previous input will be  <"potato" : "10">, <"cat" : "4">, ...
+          for (auto const& pair : tally)
+          {
+            reducer->reduce(pair.first, pair.second);
           }
           return Status::OK;
         }

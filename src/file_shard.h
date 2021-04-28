@@ -46,7 +46,7 @@ static void _sync_to_newlines(std::vector<FileShard>& fileShards) {
       file.seekg(file_info.last, file.beg);
       std::getline(file, tmp);
       pos = file.tellg();
-      file_info.last = pos > 0 ? pos : file_info.size;
+      file_info.last = pos > 0 ? pos - 1 : file_info.size;
     }
   }
 }
