@@ -35,7 +35,7 @@ inline void parse_multivalue_field(std::string field, std::vector<std::string>& 
 
 inline int getTotalFileSize(std::vector<std::string>& files)
 {
-  int totalSize = 0;
+  long double totalSize = 0;
   for (auto file: files)
   {
   // std::cout << "DEBUG: File: " << file << "\n";
