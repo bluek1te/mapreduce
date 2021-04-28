@@ -72,7 +72,7 @@ class MapReduceHandler {
     }
 
     int handle_map(FileShard shard, size_t mapper_id) {
-      std::cout << "Handling map for user " << this->mr_spec.user_id << "out_dir: " << this->mr_spec.output_dir << std::endl;
+      // std::cout << "Handling map for user " << this->mr_spec.user_id << " out_dir: " << this->mr_spec.output_dir << std::endl;
       map_data_in req;
       req.set_user_id(this->mr_spec.user_id);
       req.set_out_dir(this->mr_spec.output_dir);
@@ -92,13 +92,12 @@ class MapReduceHandler {
       Status status;
 
       status = this->service_stub->map_impl(&ctx, req, &reply);
-      std::cout << "Status " << status.ok() << std::endl;
 
-      return (status.ok() ? 0 : 1); 
+      return status.ok(); 
     }
 
     int handle_reduce(size_t n_mappers, size_t reducer_id) {
-      std::cout << "Handling reduce for user " << this->mr_spec.user_id << "out_dir: " << this->mr_spec.output_dir << std::endl;
+      // std::cout << "Handling reduce for user " << this->mr_spec.user_id << ", out_dir: " << this->mr_spec.output_dir << std::endl;
       reduce_data_in req;
       req.set_user_id(this->mr_spec.user_id);
       req.set_out_dir(this->mr_spec.output_dir);
@@ -110,9 +109,8 @@ class MapReduceHandler {
       Status status;
 
       status = this->service_stub->reduce_impl(&ctx, req, &reply);
-      std::cout << "Status " << status.ok() << std::endl;
 
-      return (status.ok() ? 0 : 1); 
+      return status.ok(); 
     }
 };
 
@@ -126,29 +124,37 @@ bool Master::run() {
   if (stat("output", &info) != 0)
     system("mkdir -p output");
 
-  std::vector<std::future<int>*> rets;
+  // Launch mapper calls asynchronously. This is done by creating a handler object, and launching the handle_map
+  // method using C++ futures. The return value of the future will be 1 on SUCCESS, 0 on FAILURE.
+  std::vector<std::future<int>*> mapper_rets;
   std::vector<MapReduceHandler*> mappers;
 
-  size_t worker_index = 0;
-  size_t mapper_index = 0;
+  size_t worker_index = 0; // This is used because we can have less workers than mappers requested, so some workers may have
+                           // to process more than one shard
+  size_t mapper_index = 0; // Unique identifier for mapper
   for (auto shard : this->file_shards) {
+    // Can probably turn this to a managed ptr.
     MapReduceHandler* mapper = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
     mappers.push_back(mapper);
     std::future<int>* ret = new std::future<int>;
-    // std::cout << "Launching async call\n";
     *ret = std::async(&MapReduceHandler::handle_map, mapper, shard, mapper_index);
-    rets.push_back(ret);
+    mapper_rets.push_back(ret);
     mapper_index++;
     worker_index++;
     if (worker_index >= this->mr_spec.n_workers)
       worker_index = 0;
   }
 
-  for (auto ret : rets) {
-    ret->get();
+  std::cout << "Mapper Ret Status: ";
+  for (auto ret : mapper_rets) {
+    int ret_val = ret->get();
+    std::cout << "[" << ((ret_val) ? "O" : "X") << "]";
     delete ret;
   }
+  std::cout << "\n";
 
+  // Launch reducer calls asynchronously. Same gist as mappers.
+  // The return value of the future will be 1 on SUCCESS, 0 on FAILURE.
   std::vector<std::future<int>*> reduce_rets;
   std::vector<MapReduceHandler*> reducers;
   worker_index = 0;
@@ -163,10 +169,13 @@ bool Master::run() {
       worker_index = 0;
   }
 
+  std::cout << "Reducer Ret Status: ";
   for (auto ret : reduce_rets) {
-    ret->get();
+    int ret_val = ret->get();
+    std::cout << "[" << ((ret_val) ? "O" : "X") << "]";
     delete ret;
   }
+  std::cout << "\n";
   
 	return true;
 }

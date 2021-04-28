@@ -22,6 +22,8 @@ struct FileShard {
   std::vector<fileinfo> filedata;
 };
 
+// <\brief> Helper function to get the filesize of a file.
+// <\param> filename : the filename
 static std::ifstream::pos_type filesize(std::string filename)
 {
     std::ifstream file(filename, std::ifstream::binary | std::ifstream::ate);
@@ -29,6 +31,8 @@ static std::ifstream::pos_type filesize(std::string filename)
     return file.tellg();
 }
 
+// <\brief> Helper function to slightly adjust the offset so that they do not bisect words.
+// <\param> fileShards : input fileShard vector.
 static void _sync_to_newlines(std::vector<FileShard>& fileShards) {
   std::string tmp;
   int pos = 0;
@@ -47,7 +51,9 @@ static void _sync_to_newlines(std::vector<FileShard>& fileShards) {
   }
 }
 
-/* CS6210_TASK: Create fileshards from the list of input files, map_kilobytes etc. using mr_spec you populated  */ 
+// <\brief> Sharding implementation
+// <\param> mr_spec : Specification structure built from configuration file
+// <\param> fileShards : Output file shard vector
 inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fileShards) {
   std::map<std::string, int> filesizes;
 
@@ -93,8 +99,10 @@ inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fi
 
       partition_size += diff;
       if (partition_size >= mr_spec.chunk_size) {
+#if DEBUG_SHARD
         std::cout << file_info.name << "(" << file_info.first;
         std::cout << "|" << file_info.last << ")" << std::endl;
+#endif
         fileShards.push_back(file_shard);
         file_shard.filedata.clear();
       }
