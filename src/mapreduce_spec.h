@@ -38,9 +38,10 @@ inline int getTotalFileSize(std::vector<std::string>& files)
   long double totalSize = 0;
   for (auto file: files)
   {
-  // std::cout << "DEBUG: File: " << file << "\n";
+    std::cout << "DEBUG: File: " << file << "\n";
     std::ifstream fileHandle(file, std::ios::binary);
     fileHandle.seekg(0, std::ios::end);
+    std::cout << fileHandle.tellg() << "\n";
     totalSize += fileHandle.tellg();
   }
 
