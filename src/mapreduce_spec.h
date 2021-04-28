@@ -7,9 +7,8 @@
 #include <vector>
 #include <map>
 #include <cmath>
-#include<sstream>
+#include <sstream>
 
-/* CS6210_TASK: Create your data structure here for storing spec from the config file */
 struct MapReduceSpec 
 {
   std::string user_id;
@@ -48,8 +47,6 @@ inline int getTotalFileSize(std::vector<std::string>& files)
   return totalSize;
 }
 
-
-/* CS6210_TASK: Populate MapReduceSpec data structure with the specification from the config file */
 inline bool read_mr_spec_from_config_file(const std::string& config_filename, MapReduceSpec& mr_spec) 
 {
   std::ifstream configFile(config_filename);
@@ -93,8 +90,6 @@ inline bool read_mr_spec_from_config_file(const std::string& config_filename, Ma
   return true;
 }
 
-
-/* CS6210_TASK: validate the specification read from the config file */
 inline bool validate_mr_spec(const MapReduceSpec& mr_spec) 
 {
 

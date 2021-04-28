@@ -120,9 +120,11 @@ bool Master::run() {
   std::cout << "Running Master" << std::endl;
 #endif
   // Create Output Directory if it doesn't exist
-	struct stat info;
-  if (stat("output", &info) != 0)
-    system("mkdir -p output");
+	// struct stat info;
+  // if (stat("output", &info) != 0)
+  //  system("mkdir -p output");
+  mkdir(const_cast<char *>(this->mr_spec.output_dir.c_str()), 0777);
+  mkdir(const_cast<char *>("interm"), 0777);
 
   // Launch mapper calls asynchronously. This is done by creating a handler object, and launching the handle_map
   // method using C++ futures. The return value of the future will be 1 on SUCCESS, 0 on FAILURE.

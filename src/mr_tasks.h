@@ -36,7 +36,7 @@ inline void BaseMapperInternal::create_file_handles() {
   std::cout << "Creating File Handles in directory: " + this->out_dir + "\n";
 #endif
 	for (int i = 0; i < this->n_outputs; i++) {
-		this->output_files.push_back(std::ofstream{this->out_dir + "/" + std::to_string(this->mapper_id) + "_" + 
+		this->output_files.push_back(std::ofstream{"interm/" + std::to_string(this->mapper_id) + "_" + 
       std::to_string(i) + ".txt", std::ios::binary | std::ios::ate});
 	}
 }
@@ -69,7 +69,9 @@ struct BaseReducerInternal {
 		size_t n_mappers;
     size_t reducer_id;
     std::string out_dir;
+    std::ofstream output_file;
 
+    void create_file_handle();
 };
 
 
@@ -78,9 +80,11 @@ inline BaseReducerInternal::BaseReducerInternal() {
   
 }
 
+inline void BaseReducerInternal::create_file_handle() {
+  this->output_file = std::ofstream{this->out_dir + "/" + std::to_string(this->reducer_id) + "_output.txt", std::ios_base::app};
+}
 
 /* CS6210_TASK Implement this function */
 inline void BaseReducerInternal::emit(const std::string& key, const std::string& val) {
-	std::ofstream output_file {out_dir + "/" + std::to_string(reducer_id) + "_output.txt", std::ios_base::app};
-  output_file << key << " " << val << "\n";
+  this->output_file << key << " " << val << "\n";
 }

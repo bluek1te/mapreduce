@@ -95,12 +95,13 @@ class Worker {
           std::shared_ptr<BaseReducer> reducer = get_reducer_from_task_factory(req->user_id());
           reducer->impl_->reducer_id = req->reducer_id();
           reducer->impl_->out_dir = req->out_dir();
+          reducer->impl_->create_file_handle();
           std::string tmp;
           std::string token;
           // The reducers have to process an input from each mapper, so we loop through the number of mappers. The input file parsed
           // is named <mapper_id>_<reducer_id>.txt
           for (size_t i = 0; i < req->n_mappers(); i++) {
-            std::string input_file_str = req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt";
+            std::string input_file_str = "interm/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt";
             std::ifstream input_file {input_file_str, 
               std::ios::binary | std::ios::ate};
               input_file.seekg(0, std::ios::beg);
@@ -108,6 +109,8 @@ class Worker {
             // The intermediate buffers that get passed to the reducer function here, for example, will be.
             // <"potato" : "1", "3", "1", "5">, <"cat" : "1", "1", "1" ,"1">, ...
             while(getline(input_file, tmp)) {
+              if (tmp.find_first_not_of(" ") == std::string::npos) // If it's only whitespace, skip.
+                continue;
               std::stringstream item(tmp);
               getline(item, token, ' ');
               std::string key = token;
@@ -120,10 +123,10 @@ class Worker {
                 std::vector<std::string> vals;
                 tally.emplace(key, vals);
               }
-              for (auto const& pair : tally)
-              {
-                reducer->reduce(pair.first, pair.second);
-              }
+            }
+            for (auto const& pair : tally)
+            {
+              reducer->reduce(pair.first, pair.second);
             }
             
             // std::cout << input_file_str << std::endl;
