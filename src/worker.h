@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <cstdio>
 
 #include "mr_tasks.h"
 #include "masterworker.grpc.pb.h"
@@ -83,7 +84,8 @@ class Worker {
           std::string tmp;
           std::string token;
           for (size_t i = 0; i < req->n_mappers(); i++) {
-            std::ifstream input_file {req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt", 
+            std::string input_file_str = req->out_dir() + "/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt";
+            std::ifstream input_file {input_file_str, 
               std::ios::binary | std::ios::ate};
               input_file.seekg(0, std::ios::beg);
             
@@ -105,6 +107,10 @@ class Worker {
                 reducer->reduce(pair.first, pair.second);
               }
             }
+            // Have to pass this in as a cstring or C++ compiler will think you want a diff function..
+            std::cout << input_file_str << std::endl;
+            input_file.close();
+            remove(input_file_str.c_str());
           }
 
           return Status::OK;
