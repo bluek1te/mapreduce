@@ -78,6 +78,7 @@ struct BaseReducerInternal {
 
 		/* DON'T change this function's signature */
 		BaseReducerInternal();
+    ~BaseReducerInternal();
 
 		/* DON'T change this function's signature */
 		void emit(const std::string& key, const std::string& val);
@@ -95,6 +96,10 @@ struct BaseReducerInternal {
 /* CS6210_TASK Implement this function */
 inline BaseReducerInternal::BaseReducerInternal() {
   
+}
+
+inline BaseReducerInternal::~BaseReducerInternal() {
+  this->output_file.close();
 }
 
 inline void BaseReducerInternal::create_file_handle() {
