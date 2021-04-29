@@ -76,10 +76,13 @@ class Worker {
 #endif
             std::ifstream input_file {file_info.file_name(), std::ios::binary | std::ios::ate };
             len = file_info.last() - file_info.first();
+            if (len == 0)
+              continue;
             char* read_buffer = new char[len + 1];
             memset(read_buffer, 0, len + 1);
             input_file.seekg(file_info.first(), std::ios::beg);
             input_file.read(read_buffer, len);
+            read_buffer[len] = 0;
             std::stringstream item(read_buffer);
             while(std::getline(item, out_buffer))
             {   

@@ -1,9 +1,10 @@
 #pragma once
-#define DEBUG_SHARD 0
+#define DEBUG_SHARD 1
 
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "mapreduce_spec.h"
 
@@ -31,6 +32,13 @@ static std::ifstream::pos_type filesize(std::string filename)
     return file.tellg();
 }
 
+static bool delete_if_overlap(const fileinfo& file_info)
+{
+  if (file_info.first > file_info.last)
+    std::cout << "Deleting due to overlap!" << std::endl;
+  return (file_info.first > file_info.last);
+}
+
 // <\brief> Helper function to slightly adjust the offset so that they do not bisect words.
 // <\param> fileShards : input fileShard vector.
 static void _sync_to_newlines(std::vector<FileShard>& fileShards) {
@@ -47,7 +55,12 @@ static void _sync_to_newlines(std::vector<FileShard>& fileShards) {
       std::getline(file, tmp);
       pos = file.tellg();
       file_info.last = pos > 0 ? pos - 1 : file_info.size;
+#if DEBUG_SHARD
+      std::cout << file_info.name << "(" << file_info.first;
+      std::cout << "|" << file_info.last << ")" << std::endl;
+#endif
     }
+    shard.filedata.erase(std::remove_if(shard.filedata.begin(), shard.filedata.end(), delete_if_overlap), shard.filedata.end());
   }
 }
 
@@ -94,7 +107,10 @@ inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fi
 
       last = file_info.first + diff;
       file_info.last = last;
-      file_shard.filedata.push_back(file_info);
+      if (file_info.first != file_info.last)
+        file_shard.filedata.push_back(file_info);
+      else if (file_info.first > file_info.last)
+        std::cout << "MAJOR ERROR" << std::endl << std::endl;
       bytes_left -= diff;
 
       partition_size += diff;
@@ -114,5 +130,6 @@ inline bool shard_files(const MapReduceSpec& mr_spec, std::vector<FileShard>& fi
     }
   }
   _sync_to_newlines(fileShards);
+  //exit(0);
   return true;
 }
