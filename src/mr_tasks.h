@@ -78,6 +78,7 @@ struct BaseReducerInternal {
 
 		/* DON'T change this function's signature */
 		BaseReducerInternal();
+    ~BaseReducerInternal();
 
 		/* DON'T change this function's signature */
 		void emit(const std::string& key, const std::string& val);
@@ -97,8 +98,12 @@ inline BaseReducerInternal::BaseReducerInternal() {
   
 }
 
+inline BaseReducerInternal::~BaseReducerInternal() {
+  this->output_file.close();
+}
+
 inline void BaseReducerInternal::create_file_handle() {
-  this->output_file = std::ofstream{this->out_dir + "/" + std::to_string(this->reducer_id) + "_output.txt", std::ios::binary | std::ios_base::app};
+  this->output_file = std::ofstream{this->out_dir + "/" + std::to_string(this->reducer_id) + "_output.txt", std::ios::binary};
   this->counter = 0;
 }
 

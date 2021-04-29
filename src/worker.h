@@ -141,7 +141,8 @@ class Worker {
           // Pass each pair to reduce function. Corellating output to previous input will be  <"potato" : "10">, <"cat" : "4">, ...
           for (auto const& pair : tally)
             reducer->reduce(pair.first, pair.second);
-
+          
+          reducer->impl_->output_file.close();
           return Status::OK;
         }
     };
