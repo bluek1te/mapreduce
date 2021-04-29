@@ -6,6 +6,8 @@
 #include <fstream>
 #include <vector>
 #include <stdio.h>
+#include <functional>
+#include <algorithm>
 
 /* CS6210_TASK Implement this data structureas per your implementation.
 		You will need this when your worker is running the map task*/
@@ -25,6 +27,7 @@ struct BaseMapperInternal {
   size_t flush_limit;
   std::string out_dir;
   std::vector<std::ofstream> output_files;
+  std::hash<std::string> hasher;
   void cleanup_files(void);
   void create_file_handles(void);
   void initialize_file_index(void);
@@ -44,7 +47,6 @@ inline void BaseMapperInternal::create_file_handles() {
   this->output_files.push_back(std::ofstream{"interm/" + std::to_string(this->mapper_id) + "_" + 
       std::to_string(i) + ".txt", std::ios::binary | std::ios::ate});
   }
-  this->flush_limit = this->n_outputs * 5;
 }
 
 inline void BaseMapperInternal::initialize_file_index(){
@@ -53,17 +55,13 @@ inline void BaseMapperInternal::initialize_file_index(){
 
 /* CS6210_TASK Implement this function */
 inline void BaseMapperInternal::emit(const std::string& key, const std::string& val) {
-  this->counter++;
-  if (this->counter > this->flush_limit) {
-    for (int i = 0; i < this->n_outputs; i++) 
-      //this->output_files[i].flush();
-    this->counter = 0;
-  }
-  this->output_files[this->index] << key << " " << val << std::endl;
-  this->output_files[this->index].flush();
-  this->index++;
-  if (index >= this->n_outputs)
-    index = 0;
+  if (key.compare("absorption") == 0)
+    this->counter++;
+  std::string out_key = key;
+  out_key.erase(std::remove(out_key.begin(), out_key.end(), '\n'),
+            out_key.end());
+  index = this->hasher(out_key) % this->n_outputs;
+  this->output_files[this->index] << out_key << " " << val << std::endl;
 }
 
 

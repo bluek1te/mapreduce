@@ -1,6 +1,6 @@
 #pragma once
 #define DEBUG_WORKER 1
-#define DELETE_INTER 1
+#define DELETE_INTER 0
 
 #include <grpc++/grpc++.h>
 #include <mr_task_factory.h>
@@ -83,7 +83,7 @@ class Worker {
             mapper->map(out_buffer);
             delete[] out_buffer;
           }
-
+          std::cout << mapper->impl_->counter << std::endl;
           return Status::OK;
         }
 
