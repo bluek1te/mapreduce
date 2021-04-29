@@ -128,7 +128,7 @@ bool Master::run() {
 #endif
   // Launch mapper calls asynchronously. This is done by creating a handler object, and launching the handle_map
   // method using C++ futures. The return value of the future will be 1 on SUCCESS, 0 on FAILURE.
-  std::vector<std::future<int>*> mapper_rets;
+  std::vector<std::future<int>*> map_rets;
   std::vector<MapReduceHandler*> mappers;
 
   size_t worker_index = 0; // This is used because we can have less workers than mappers requested, so some workers may have
@@ -140,7 +140,7 @@ bool Master::run() {
     mappers.push_back(mapper);
     std::future<int>* ret = new std::future<int>;
     *ret = std::async(&MapReduceHandler::handle_map, mapper, shard, mapper_index);
-    mapper_rets.push_back(ret);
+    map_rets.push_back(ret);
     mapper_index++;
     worker_index++;
     if (worker_index >= this->mr_spec.n_workers)
@@ -148,18 +148,33 @@ bool Master::run() {
   }
 
   std::cout << "Mapper Ret Status: ";
-  for (auto ret : mapper_rets) {
-    int ret_val = ret->get();
-    std::cout << "[" << ((ret_val) ? "O" : "X") << "]";
-    delete ret;
+  bool retry = false;
+  bool* map_ret_vals = new bool[map_rets.size()];
+  std::fill(map_ret_vals, map_ret_vals + map_rets.size(), false);
+  for (int i = 0; i < map_rets.size(); i++) {
+    if (i == 0)
+      retry = false;
+    if (map_ret_vals[i] == false)
+      map_ret_vals[i] = map_rets[i]->get();
+    if (map_ret_vals[i] == false) {
+      std::cout << "Retrying with worker index " << worker_index << std::endl;
+      retry = true;
+      delete mappers[i];
+      mappers[i] = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
+      worker_index++;
+      if (worker_index >= this->mr_spec.n_workers)
+        worker_index = 0;
+      *(map_rets[i]) = std::async(&MapReduceHandler::handle_map, mappers[i], this->file_shards[i], i);
+    }
+    if (i == map_rets.size() - 1 && retry == true) {
+      i = -1;
+    }
   }
-  std::cout << "\n";
 
   // Launch reducer calls asynchronously. Same gist as mappers.
   // The return value of the future will be 1 on SUCCESS, 0 on FAILURE.
   std::vector<std::future<int>*> reduce_rets;
   std::vector<MapReduceHandler*> reducers;
-  worker_index = 0;
   for (int i = 0; i < this->mr_spec.n_output_files; i++) {
     std::future<int>* ret = new std::future<int>;
     MapReduceHandler* reducer = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
@@ -172,12 +187,28 @@ bool Master::run() {
   }
 
   std::cout << "Reducer Ret Status: ";
-  for (auto ret : reduce_rets) {
-    int ret_val = ret->get();
-    std::cout << "[" << ((ret_val) ? "O" : "X") << "]";
-    delete ret;
+  retry = false;
+  bool* reduce_ret_vals = new bool[reduce_rets.size()];
+  std::fill(reduce_ret_vals, reduce_ret_vals + reduce_rets.size(), false);
+  for (int i = 0; i < reduce_rets.size(); i++) {
+    if (i == 0)
+      retry = false;
+    if (reduce_ret_vals[i] == false)
+      reduce_ret_vals[i] = reduce_rets[i]->get();
+    if (reduce_ret_vals[i] == false) {
+      std::cout << "Retrying with worker index " << worker_index << std::endl;
+      retry = true;
+      delete reducers[i];
+      reducers[i] = new MapReduceHandler(this->mr_spec.worker_addrs[worker_index], this->mr_spec);
+      worker_index++;
+      if (worker_index >= this->mr_spec.n_workers)
+        worker_index = 0;
+      *(reduce_rets[i]) = std::async(&MapReduceHandler::handle_reduce, reducers[i], this->file_shards.size(), i);
+    }
+    if (i == reduce_rets.size() - 1 && retry == true) {
+      i = -1;
+    }
   }
-  std::cout << "\n";
   
   return true;
 }
