@@ -98,7 +98,7 @@ inline BaseReducerInternal::BaseReducerInternal() {
 }
 
 inline void BaseReducerInternal::create_file_handle() {
-  this->output_file = std::ofstream{this->out_dir + "/" + std::to_string(this->reducer_id) + "_output.txt", std::ios::binary | std::ios_base::app};
+  this->output_file = std::ofstream{this->out_dir + "/" + std::to_string(this->reducer_id) + "_output.txt", std::ios::binary};
   this->counter = 0;
 }
 
