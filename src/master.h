@@ -147,6 +147,8 @@ bool Master::run() {
       worker_index = 0;
   }
 
+  // This retry logic is awful but I am sleep deprived. It stores the rets in an array and if we don't get a return, we iterate the worker index
+  // and try again on a new one.
   std::cout << "Mapper Ret Status: ";
   bool retry = false;
   bool* map_ret_vals = new bool[map_rets.size()];

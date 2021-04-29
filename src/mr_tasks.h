@@ -55,11 +55,13 @@ inline void BaseMapperInternal::initialize_file_index(){
 
 /* CS6210_TASK Implement this function */
 inline void BaseMapperInternal::emit(const std::string& key, const std::string& val) {
-  if (key.compare("absorption") == 0)
-    this->counter++;
+  if (key.compare("aAn") == 0)
+    std::cout <<"Found aAn in key" << std::endl;
   std::string out_key = key;
   out_key.erase(std::remove(out_key.begin(), out_key.end(), '\n'),
             out_key.end());
+  if (key.compare("aAn") == 0)
+    std::cout <<"Found aAn in out key" << std::endl;
   index = this->hasher(out_key) % this->n_outputs;
   this->output_files[this->index] << out_key << " " << val << std::endl;
 }
