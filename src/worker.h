@@ -1,6 +1,6 @@
 #pragma once
 #define DEBUG_WORKER 1
-#define DELETE_INTER 0
+#define DELETE_INTER 1
 
 #include <grpc++/grpc++.h>
 #include <mr_task_factory.h>
