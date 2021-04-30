@@ -68,7 +68,6 @@ class Worker {
           // A shard can contain multiple file references. For each file in the shard, we read the length provided
           // to us by the offsets, starting at the beginning offset. This gets stored into a buffer and then passed to
           // the user's map function.
-          std::string out_buffer;
           for (auto file_info : req->fileinfos_rpc()) {
 #if DEBUG_WORKER
             std::cout << "ID: " << std::to_string(req->mapper_id()) << "-" << "Processing file " 
@@ -78,20 +77,17 @@ class Worker {
             len = file_info.last() - file_info.first();
             if (len == 0)
               continue;
-            char* read_buffer = new char[len + 1];
-            memset(read_buffer, 0, len + 1);
+            std::string read_buffer;
+            size_t bytes_read = 0;
             input_file.seekg(file_info.first(), std::ios::beg);
-            input_file.read(read_buffer, len);
-            read_buffer[len] = 0;
-            std::stringstream item(read_buffer);
-            while(std::getline(item, out_buffer))
-            {   
-              mapper->map(out_buffer);
+            while (bytes_read < len) {
+              getline(input_file, read_buffer); 
+              bytes_read += read_buffer.length() + 1;
+              mapper->map(read_buffer);
+              //std::cout << read_buffer << ":" << read_buffer.length() - 1 << std::endl;
             }
-  
-            delete[] read_buffer;
+            //std::cout << file_info.first() << ":" << bytes_read << ":" << len << ":" << file_info.last() << std::endl;
           }
-          std::cout << mapper->impl_->counter << std::endl;
           return Status::OK;
         }
 
@@ -115,8 +111,8 @@ class Worker {
             std::string input_file_str = "interm/" + std::to_string(i) + "_" + std::to_string(req->reducer_id()) + ".txt";
             std::ifstream input_file {input_file_str, 
               std::ios::binary | std::ios::ate};
-            std::cout << "Reduce: Processing " + input_file_str + "\n";
-              input_file.seekg(0, std::ios::beg);
+            //std::cout << "Reduce: Processing " + input_file_str + "\n";
+            input_file.seekg(0, std::ios::beg);
             // Parse line by line and create a map with <key, values> (note that "values" is plural here).
             // The intermediate buffers that get passed to the reducer function here, for example, will be.
             // <"potato" : "1", "3", "1", "5">, <"cat" : "1", "1", "1" ,"1">, ...
