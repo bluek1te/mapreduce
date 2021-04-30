@@ -68,7 +68,7 @@ class Worker {
           // A shard can contain multiple file references. For each file in the shard, we read the length provided
           // to us by the offsets, starting at the beginning offset. This gets stored into a buffer and then passed to
           // the user's map function.
-
+          std::string out_buffer;
           for (auto file_info : req->fileinfos_rpc()) {
 #if DEBUG_WORKER
             std::cout << "ID: " << std::to_string(req->mapper_id()) << "-" << "Processing file " 
@@ -76,14 +76,22 @@ class Worker {
 #endif
             std::ifstream input_file {file_info.file_name(), std::ios::binary | std::ios::ate };
             len = file_info.last() - file_info.first();
-            char* out_buffer = new char[len + 1];
-            memset(out_buffer, 0, len + 1);
+            if (len == 0)
+              continue;
+            char* read_buffer = new char[len + 1];
+            memset(read_buffer, 0, len + 1);
             input_file.seekg(file_info.first(), std::ios::beg);
-            input_file.read(out_buffer, len);
-            mapper->map(out_buffer);
-            delete[] out_buffer;
+            input_file.read(read_buffer, len);
+            read_buffer[len] = 0;
+            std::stringstream item(read_buffer);
+            while(std::getline(item, out_buffer))
+            {   
+              mapper->map(out_buffer);
+            }
+  
+            delete[] read_buffer;
           }
-
+          std::cout << mapper->impl_->counter << std::endl;
           return Status::OK;
         }
 
