@@ -19,6 +19,9 @@ are run from the build/bin directory created when cmake finishes building the ap
 
   1) The workers are run with the command: ./mr_worker <ipaddr:port> &
   2) The master application is run with ./mrdemo <location of config.ini>
+  
+In addition, the input files need to be copied over to the build/bin directory and saved under a folder called input. The initial set
+of input files are located in the test/input directory if navigating from the root of the repository.
 
 
 // Config File
