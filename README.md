@@ -1,17 +1,14 @@
 CS-6210 Project 4
 Richard Gaitan and Phillip Tran
 
-# cs6210Project4
-MapReduce Infrastructure
+// Summary
+The purpose of this project is to implement a map/reduce framework leveraging the gRPC library. This framework is designed to take 
+as input text files that will then be divided into "shards" that will serve as the unit of computation for the mappers. The mappers 
+will then generate intermediate files that the reducers will consume. The reducers will reduce those intermediate files into output 
+files that are the final product for the user.
 
-## Project Instructions
+// How to Use and Build
 
-[Project Description](description.md)
-
-[Code walk through](structure.md)
-
-
-### How to setup the project  
 To build, do the following (from the root of the project directory): 
     1) mkdir build && cd build
     2) cmake ..
@@ -27,13 +24,7 @@ In addition, the input files need to be copied over to the build/bin directory a
 of input files are located in the test/input directory if navigating from the root of the repository.
 
 
-### Summary
-The purpose of this project is to implement a map/reduce framework leveraging the gRPC library. This framework is designed to take 
-as input text files that will then be divided into "shards" that will serve as the unit of computation for the mappers. The mappers 
-will then generate intermediate files that the reducers will consume. The reducers will reduce those intermediate files into output 
-files that are the final product for the user.
-
-### Config File
+// Config File
 The configuration file config.ini controls the behavior of both the workers and the master application. As stated in the 
 structure.md file, cmake` creates a make rule to install a symbolic link to this file into the build/bin folder. The user
 can edit this file to configure several options described below:
@@ -50,11 +41,11 @@ can edit this file to configure several options described below:
     - user_id             - specifies the user id used to register with the task factory to generate mappers/reducers
 
 
-### Theory of Operation
+// Theory of Operation
 The project is divided into two sections that work together to implement all of the functionality necessary: worker (mr_worker) 
 and master (mrdemo). 
 
-#### Worker
+/// Worker
 From the perspective of the worker, the framework leverages the gRPC library as a means to call map or reduce remotely from the master 
 as it assigns tasking to either a mapper or reducer. The worker instantiates a MapReduceImpl object that functions as a gRPC server
 and register a user using a specified "user_id " in the configuration file, config.ini. The worker will wait for RPC calls from the 
@@ -62,7 +53,7 @@ master and service the RPC request. It has both a map_impl or reduce_impl method
 method invoked depends on the RPC stub received. The actual mapper or reducer is obtained through a task factory that will return the 
 appropriate worker based on which method is called in the RPC stub.
 
-#### Master
+/// Master
 From the perspective of the master, the framework leverage the gRPC library to call either map or reduce from a worker as 
 a local method call. The master parses the configuration file and creates the file shards based on the input files supplied,
 the chunk size (determined by the "map_kilobytes" configuration parameter) and the total size in bytes of the input files.
@@ -75,14 +66,12 @@ files specified by the user ("n_output_files" configuration parameter). The mast
 respawn any reducers that fail once again and wait for all reducers to successfully complete.
 
 
-### Division of Work
+// Division of Work
 Richard Gaitan was responsible for developing the file sharding algorithm as well as parsing the configuration file, help
 troubleshoot issues, help write the map/reduce handler implementation objects, and write the documentation for the project.
 
 Phillip Tran was responsible for intergrating the map/reduce algorithms, develop the asynchronous gRPC calls, develop the
 gRPC stubs and write the map/reduce handler implementation objects, and write the documentation for the project.
 
-### Resources Used
-https://grpc.io/docs/languages/cpp/quickstart/
-
+// Resources Used
 
