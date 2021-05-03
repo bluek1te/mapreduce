@@ -45,7 +45,7 @@ inline void BaseMapperInternal::create_file_handles() {
 #endif
   for (int i = 0; i < this->n_outputs; i++) {
   this->output_files.push_back(std::ofstream{"interm/" + std::to_string(this->mapper_id) + "_" + 
-      std::to_string(i) + ".txt", std::ios::binary | std::ios::ate});
+      std::to_string(i) + ".txt", std::ios::binary});
   }
 }
 
@@ -109,9 +109,5 @@ inline void BaseReducerInternal::create_file_handle() {
 
 /* CS6210_TASK Implement this function */
 inline void BaseReducerInternal::emit(const std::string& key, const std::string& val) {
-  this->counter++;
-  if (this->counter > 5) {
-    this->counter = 0;
-  }
   this->output_file << key << " " << val << std::endl;
 }
